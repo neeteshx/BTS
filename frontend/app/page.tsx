@@ -1,108 +1,181 @@
-"use client";
+"use client"
 
-import { useState } from "react";
+import { useEffect, useState } from "react"
+import Link from "next/link"
+import { motion } from "framer-motion"
+import { Button } from "@/components/ui/button"
+import {
+  ReceiptTextIcon,
+  WalletIcon,
+  TargetIcon,
+  TrendingUpIcon,
+  ArrowRightIcon,
+  ShieldCheckIcon
+} from "lucide-react"
 
-export default function LoginTester() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [status, setStatus] = useState("Waiting to test connection...");
-  const [tokenPreview, setTokenPreview] = useState("");
+// --- FEATURE DATA ---
+const features = [
+  {
+    title: "Smart Ledger",
+    description: "Effortlessly log your income and expenses. Auto-categorize your spending and always know exactly where your money is going.",
+    icon: ReceiptTextIcon,
+    href: "/transactions",
+    color: "text-blue-500",
+    bg: "bg-blue-500/10"
+  },
+  {
+    title: "Strict Budgeting",
+    description: "Set monthly limits for specific categories like Groceries or Entertainment. Get real-time alerts the moment you overspend.",
+    icon: WalletIcon,
+    href: "/budgets",
+    color: "text-red-500",
+    bg: "bg-red-500/10"
+  },
+  {
+    title: "Savings Goals",
+    description: "Planning a vacation or buying a new car? Create interactive goals, add funds, and watch your progress bar hit 100%.",
+    icon: TargetIcon,
+    href: "/goals",
+    color: "text-green-500",
+    bg: "bg-green-500/10"
+  },
+  {
+    title: "Investment Portfolio",
+    description: "Track your stocks, crypto, and mutual funds. Fully synced with your ledger using automated double-entry accounting.",
+    icon: TrendingUpIcon,
+    href: "/investments",
+    color: "text-purple-500",
+    bg: "bg-purple-500/10"
+  }
+]
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setStatus("Connecting to Windows laptop...");
-    setTokenPreview("");
+export default function LandingPage() {
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
 
-    try {
-      // Pointing directly to your Windows machine's IP address
-      const res = await fetch("http://192.168.29.155:8000/api/auth/login/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ username, password }),
-      });
+  // Check auth state on load
+  useEffect(() => {
+    setIsMounted(true)
+    const token = localStorage.getItem("access")
+    setIsLoggedIn(!!token)
+  }, [])
 
-      const data = await res.json();
+  // Prevent hydration mismatch
+  if (!isMounted) return null
 
-      if (res.ok) {
-        setStatus("✅ Connection Successful! Logged in.");
-        // Showing a tiny preview of the token to prove it worked
-        setTokenPreview(data.access.substring(0, 20) + "..."); 
-        
-        // In a real app, you would save this token:
-        // localStorage.setItem("access", data.access);
-        // localStorage.setItem("refresh", data.refresh);
-      } else {
-        setStatus("❌ Connection worked, but Django rejected the login.");
-        setTokenPreview(JSON.stringify(data)); // This will show the exact error from Django
-      }
-    } catch (error) {
-      console.error(error);
-      setStatus("🚨 Network Error! Could not reach the backend.");
-      setTokenPreview("Make sure Django is running with '0.0.0.0:8000' and Windows Firewall isn't blocking it.");
-    }
-  };
+  // Helper to route unauthenticated users to login
+  const getDestination = (path: string) => isLoggedIn ? path : "/login"
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
-      <div className="max-w-md w-full bg-white rounded-xl shadow-lg p-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-6 text-center">
-          Backend Link Test
-        </h1>
+    <div className="min-h-screen bg-background text-foreground flex flex-col overflow-x-hidden">
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Username
-            </label>
-            <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
+      {/* --- TOP BAR --- */}
+      <header className="sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md">
+        <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-2 font-bold text-xl tracking-tighter">
+            <ShieldCheckIcon className="h-6 w-6 text-primary" />
+            <span>BTS</span>
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition duration-200"
-          >
-            Test Connection
-          </button>
-        </form>
-
-        {/* Status Output Console */}
-        <div className="mt-8 p-4 bg-gray-900 rounded-md">
-          <p className="text-sm text-gray-300 font-mono mb-2">Status:</p>
-          <p className={`text-sm font-bold ${status.includes('✅') ? 'text-green-400' : status.includes('❌') || status.includes('🚨') ? 'text-red-400' : 'text-yellow-400'}`}>
-            {status}
-          </p>
-          
-          {tokenPreview && (
-            <div className="mt-4 pt-4 border-t border-gray-700">
-              <p className="text-sm text-gray-300 font-mono mb-1">Response Payload:</p>
-              <p className="text-xs text-green-300 font-mono break-all bg-gray-800 p-2 rounded">
-                {tokenPreview}
-              </p>
-            </div>
-          )}
+          <nav className="flex items-center gap-4">
+            {isLoggedIn ? (
+              <Link href="/dashboard">
+                <Button>Go to Dashboard</Button>
+              </Link>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="ghost">Log in</Button>
+                </Link>
+                <Link href="/signup">
+                  <Button>Sign up</Button>
+                </Link>
+              </>
+            )}
+          </nav>
         </div>
-      </div>
-    </main>
-  );
+      </header>
+
+      <main className="flex-1">
+        {/* --- HERO SECTION --- */}
+        <section className="container mx-auto px-4 py-24 md:py-32 lg:py-40 flex flex-col items-center text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="max-w-[800px] space-y-6"
+          >
+            <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
+              Master Your Money with <span className="text-primary">BTS</span>
+            </h1>
+            <p className="mx-auto max-w-[600px] text-muted-foreground md:text-xl leading-relaxed">
+              The ultimate personal finance OS. Track your spending, enforce strict budgets, crush your savings goals, and monitor your investments all in one unified platform.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
+              <Link href={getDestination("/dashboard")}>
+                <Button size="lg" className="w-full sm:w-auto text-md h-12 px-8">
+                  {isLoggedIn ? "Open Dashboard" : "Get Started for Free"}
+                  <ArrowRightIcon className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </motion.div>
+        </section>
+
+        {/* --- SCROLLING FEATURES SECTION --- */}
+        <section className="container mx-auto px-4 py-16 md:py-24 space-y-24">
+          {features.map((feature, index) => {
+            const Icon = feature.icon
+            // Alternate text left/right on desktop
+            const isEven = index % 2 === 0
+
+            return (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 40 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-100px" }}
+                transition={{ duration: 0.6, ease: "easeOut" }}
+                className={`flex flex-col gap-8 md:gap-12 items-center ${
+                  isEven ? "md:flex-row" : "md:flex-row-reverse"
+                }`}
+              >
+                {/* Feature Graphic/Placeholder */}
+                <div className="flex-1 w-full aspect-video md:aspect-square max-h-[400px] rounded-2xl border bg-card flex items-center justify-center shadow-sm relative overflow-hidden group">
+                  <div className={`absolute inset-0 opacity-20 ${feature.bg} group-hover:scale-110 transition-transform duration-700`} />
+                  <Icon className={`h-32 w-32 ${feature.color} relative z-10 drop-shadow-sm`} />
+                </div>
+
+                {/* Feature Text */}
+                <div className="flex-1 space-y-6 text-center md:text-left">
+                  <div className={`inline-flex items-center rounded-lg px-3 py-1 text-sm font-medium ${feature.bg} ${feature.color}`}>
+                    <Icon className="mr-2 h-4 w-4" />
+                    Feature {index + 1}
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-bold tracking-tight">
+                    {feature.title}
+                  </h2>
+                  <p className="text-muted-foreground text-lg md:text-xl leading-relaxed">
+                    {feature.description}
+                  </p>
+                  <Link href={getDestination(feature.href)} className="inline-block">
+                    <Button variant="outline" size="lg" className="group">
+                      Explore {feature.title}
+                      <ArrowRightIcon className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </Button>
+                  </Link>
+                </div>
+              </motion.div>
+            )
+          })}
+        </section>
+      </main>
+
+      {/* --- FOOTER --- */}
+      <footer className="border-t py-8 md:py-12 mt-16">
+        <div className="container mx-auto px-4 text-center text-muted-foreground">
+          <p>© {new Date().getFullYear()} Budget Tracker System. Built for Demo Day.</p>
+        </div>
+      </footer>
+    </div>
+  )
 }

@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from .views import user_profile
 
 from .views import (
     RegisterView, 
@@ -40,6 +41,7 @@ urlpatterns = [
     # Custom API Endpoints
     path('dashboard/', DashboardSummaryView.as_view(), name='dashboard'),
     path('reports/generate/', GenerateReportView.as_view(), name='generate-report'),
+    path('user/me/', user_profile, name='user-profile'),
 
     # Router Endpoints
     path('', include(router.urls)), 

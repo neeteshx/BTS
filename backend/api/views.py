@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 from django.db.models import Sum
 from datetime import datetime
 from .emails import send_transaction_alert
-
+from rest_framework.decorators import api_view, permission_classes
 # Import Models
 from .models import (
     User, Category, Transaction, Budget, 
@@ -255,3 +255,22 @@ class GoalViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def user_profile(request):
+    user = request.user
+
+    if request.method == 'GET':
+        return Response({
+            "username": user.username,
+            "email": user.email,
+            "date_joined": user.date_joined.strftime("%B %Y")
+        })
+
+    elif request.method == 'PUT':
+        # Quick update logic for the demo
+        user.username = request.data.get('username', user.username)
+        user.email = request.data.get('email', user.email)
+        user.save()
+        return Response({"message": "Profile updated successfully!"})
