@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Category, Transaction, Budget, InvestmentAsset, InvestmentTransaction, MonthlyReport
+from .models import User, Category, Transaction, Budget, InvestmentAsset, InvestmentTransaction, MonthlyReport, Goal
 
 # --- AUTH SERIALIZERS ---
 class UserSerializer(serializers.ModelSerializer):
@@ -64,3 +64,8 @@ class MonthlyReportSerializer(serializers.ModelSerializer):
     class Meta:
         model = MonthlyReport
         fields = ['id', 'month', 'year', 'total_income', 'total_expenses', 'top_expense_category']
+
+class GoalSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Goal
+        fields = ['id', 'name', 'target_amount', 'current_amount', 'is_completed', 'created_at']

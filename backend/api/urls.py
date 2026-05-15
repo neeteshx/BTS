@@ -12,7 +12,8 @@ from .views import (
     InvestmentAssetViewSet, 
     InvestmentTransactionViewSet, 
     MonthlyReportViewSet,
-    GenerateReportView
+    GenerateReportView,
+GoalViewSet
 )
 
 # 1. Initialize the Router
@@ -26,6 +27,7 @@ router.register(r'budgets', BudgetViewSet, basename='budget')
 router.register(r'investments', InvestmentAssetViewSet, basename='investment')
 router.register(r'investment-transactions', InvestmentTransactionViewSet, basename='investment-transaction')
 router.register(r'reports', MonthlyReportViewSet, basename='report')
+router.register(r'goals', GoalViewSet, basename='goal')
 
 # 3. Define the URL patterns
 urlpatterns = [

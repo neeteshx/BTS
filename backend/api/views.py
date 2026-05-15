@@ -238,3 +238,13 @@ class GenerateReportView(APIView):
         )
 
         return Response({"message": "Report generated successfully!"})
+
+class GoalViewSet(viewsets.ModelViewSet):
+    serializer_class = GoalSerializer
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Goal.objects.filter(user=self.request.user).order_by('is_completed', '-created_at')
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)

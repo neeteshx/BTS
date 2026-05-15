@@ -102,3 +102,19 @@ class InvestmentTransaction(models.Model):
 
     def __str__(self):
         return f"{self.transaction_type} {self.shares} of {self.asset.symbol_or_name}"
+
+class Goal(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    name = models.CharField(max_length=255)
+    target_amount = models.DecimalField(max_digits=12, decimal_places=2)
+    current_amount = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    is_completed = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        # Automatically mark as completed if current >= target
+        if self.current_amount >= self.target_amount:
+            self.is_completed = True
+        else:
+            self.is_completed = False
+        super().save(*args, **kwargs)
