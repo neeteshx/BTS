@@ -59,6 +59,13 @@ export default function InvestmentsPage() {
 
   useEffect(() => {
     fetchAssets()
+    if (
+      typeof window !== "undefined" &&
+      window.location.search.includes("new=true")
+    ) {
+      setIsDialogOpen(true) // Pops the modal open!
+      window.history.replaceState({}, "", window.location.pathname) // Cleans the URL instantly
+    }
   }, [])
 
   const handleAddAsset = async (e: React.FormEvent<HTMLFormElement>) => {

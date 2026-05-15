@@ -55,20 +55,25 @@ class TransactionViewSet(viewsets.ModelViewSet):
         return Transaction.objects.filter(user=self.request.user).order_by('-date')
 
     def perform_create(self, serializer):
-        # --- HACKATHON MAGIC: Auto-Create Categories ---
-        # Grab the strings sent from Next.js (defaults to Misc/EXPENSE if missing)
+        # 1. Handle category logic (Find or Create)
         cat_name = self.request.data.get('category_name', 'Misc').capitalize()
         cat_type = self.request.data.get('type', 'EXPENSE')
-        
-        # Automatically find the category, or create it if it doesn't exist!
         category, created = Category.objects.get_or_create(
             user=self.request.user,
             name=cat_name,
             defaults={'type': cat_type}
         )
-        
-        # Save the transaction and link it to our newly found/created category
-        serializer.save(user=self.request.user, category=category)
+
+        # 2. Save the transaction
+        transaction = serializer.save(user=self.request.user, category=category)
+
+        # 3. FIRE THE EMAIL 📧
+        # We wrap this in a try/except so if Resend fails, the transaction still saves!
+        send_transaction_alert(
+            user_email=self.request.user.email,
+            user_name=self.request.user.username,
+            transaction=transaction
+        )
 
 
 # --- 4. Dashboard Summary API ---

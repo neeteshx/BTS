@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
+from .emails import send_goal_completed_email
 
 # 1. Custom User Model
 class User(AbstractUser):
@@ -112,9 +113,23 @@ class Goal(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        # Automatically mark as completed if current >= target
+        was_completed = False
+        if self.pk:
+            old_goal = Goal.objects.get(pk=self.pk)
+            was_completed = old_goal.is_completed
+
         if self.current_amount >= self.target_amount:
             self.is_completed = True
         else:
             self.is_completed = False
-        super().save(*args, **kwargs)
+
+        super(Goal, self).save(*args, **kwargs)
+
+        # --- NEW HACKATHON MAGIC: Fire the Resend Email! ---
+        if self.is_completed and not was_completed:
+            # We fire the email using the user's registered email address
+            send_goal_completed_email(
+                user_email=self.user.email,
+                user_name=self.user.username,
+                goal_name=self.name
+            )

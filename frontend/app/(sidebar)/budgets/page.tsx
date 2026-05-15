@@ -96,6 +96,13 @@ export default function BudgetsPage() {
 
   useEffect(() => {
     fetchData()
+    if (
+      typeof window !== "undefined" &&
+      window.location.search.includes("new=true")
+    ) {
+      setIsDialogOpen(true) // Pops the modal open!
+      window.history.replaceState({}, "", window.location.pathname) // Cleans the URL instantly
+    }
   }, [])
 
   const handleAddBudget = async (e: React.FormEvent<HTMLFormElement>) => {

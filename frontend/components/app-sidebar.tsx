@@ -22,7 +22,8 @@ import {
   FileChartColumnIcon,
   Settings2Icon,
   CircleHelpIcon,
-  WalletCardsIcon
+  WalletCardsIcon,
+  TargetIcon,
 } from "lucide-react"
 import Link from "next/link"
 
@@ -49,6 +50,11 @@ const data = {
       icon: <WalletIcon />,
     },
     {
+      title: "Goals",
+      url: "/goals",
+      icon: <TargetIcon />,
+    },
+    {
       title: "Investments",
       url: "/investments",
       icon: <TrendingUpIcon />,
@@ -60,16 +66,16 @@ const data = {
     },
   ],
   navSecondary: [
-    {
-      title: "Settings",
-      url: "/settings",
-      icon: <Settings2Icon />,
-    },
-    {
-      title: "Get Help",
-      url: "/help",
-      icon: <CircleHelpIcon />,
-    },
+    // {
+    //   title: "Settings",
+    //   url: "/settings",
+    //   icon: <Settings2Icon />,
+    // },
+    // {
+    //   title: "Get Help",
+    //   url: "/help",
+    //   icon: <CircleHelpIcon />,
+    // },
   ],
 }
 

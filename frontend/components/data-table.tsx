@@ -277,6 +277,14 @@ export function DataTable() {
       }
     }
     fetchCategories()
+
+    if (
+      typeof window !== "undefined" &&
+      window.location.search.includes("new=true")
+    ) {
+      setIsAddDialogOpen(true) // Pops the modal open!
+      window.history.replaceState({}, "", window.location.pathname) // Cleans the URL instantly
+    }
   }, [])
 
   // --- CREATE ---
