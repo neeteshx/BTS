@@ -125,7 +125,50 @@ class InvestmentAssetViewSet(viewsets.ModelViewSet):
         return InvestmentAsset.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # 1. Save the new investment to the portfolio
+        asset = serializer.save(user=self.request.user)
+
+        # 2. Calculate the total cost of the investment
+        total_cost = asset.total_shares * asset.average_buy_price
+
+        # 3. Auto-Create an "Investments" expense category in the ledger
+        category, created = Category.objects.get_or_create(
+            user=self.request.user,
+            name="Investments",
+            defaults={'type': 'EXPENSE'}
+        )
+
+        # 4. Automatically deduct the cash from the user's ledger!
+        Transaction.objects.create(
+            user=self.request.user,
+            category=category,
+            amount=total_cost,
+            description=f"Bought {asset.symbol_or_name} Shares",
+            date=datetime.now().date()
+        )
+
+    def perform_destroy(self, instance):
+        # 1. Calculate how much money to "refund" based on buy price
+        total_value = instance.total_shares * instance.average_buy_price
+
+        # 2. Auto-Create an "Investments Sold" income category
+        category, created = Category.objects.get_or_create(
+            user=self.request.user,
+            name="Investments Sold",
+            defaults={'type': 'INCOME'}
+        )
+
+        # 3. Add the cash back into the ledger!
+        Transaction.objects.create(
+            user=self.request.user,
+            category=category,
+            amount=total_value,
+            description=f"Sold {instance.symbol_or_name} Shares",
+            date=datetime.now().date()
+        )
+
+        # 4. Finally, remove the asset from the portfolio
+        instance.delete()
 
 
 # --- 7. Investment Transaction API ---
