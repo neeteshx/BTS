@@ -24,6 +24,7 @@ import {
   BellIcon,
   LogOutIcon,
 } from "lucide-react"
+import Link from "next/link"
 
 interface UserProfile {
   name: string
@@ -140,12 +141,12 @@ export function NavUser() {
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuGroup>
+            <Link href={"/account"}>
               <DropdownMenuItem>
                 <CircleUserRoundIcon />
                 Account
               </DropdownMenuItem>
-            </DropdownMenuGroup>
+            </Link>
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
               <LogOutIcon />
