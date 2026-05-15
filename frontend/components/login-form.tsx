@@ -28,7 +28,7 @@ export function LoginForm({
     setIsLoading(true)
 
     try {
-      const res = await fetch("http://192.168.29.155:8000/api/auth/login/", {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

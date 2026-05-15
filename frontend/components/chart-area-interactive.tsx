@@ -66,7 +66,7 @@ export function ChartAreaInteractive() {
 
       try {
         const res = await fetch(
-          "http://192.168.29.155:8000/api/transactions/",
+          `${process.env.NEXT_PUBLIC_API_URL}/api/transactions/`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -78,6 +78,7 @@ export function ChartAreaInteractive() {
           const rawData = await res.json()
 
           // 1. Create a map to group transactions by date
+          // 1. Create a map to group transactions by date
           const groupedByDate: Record<string, DailyData> = {}
 
           rawData.forEach((txn: any) => {
@@ -86,14 +87,12 @@ export function ChartAreaInteractive() {
               groupedByDate[dateStr] = { date: dateStr, income: 0, expenses: 0 }
             }
 
-            // Hackathon logic: Since we didn't explicitly send "type" in the transaction API,
-            // we will assume categories named "Income", "Salary", or "Bonus" are income.
-            const catName = txn.category_name?.toLowerCase() || ""
             const amount = parseFloat(txn.amount)
 
-            if (catName.includes("income") || catName.includes("salary")) {
+            // NO MORE GUESSING! We now use the exact type from the database.
+            if (txn.type === "INCOME") {
               groupedByDate[dateStr].income += amount
-            } else {
+            } else if (txn.type === "EXPENSE") {
               groupedByDate[dateStr].expenses += amount
             }
           })
@@ -233,7 +232,7 @@ export function ChartAreaInteractive() {
                 tickLine={false}
                 axisLine={false}
                 tickMargin={8}
-                tickFormatter={(value) => `$${value}`}
+                tickFormatter={(value) => `₹${value}`} // <-- Change the dollar sign to a Rupee symbol here
               />
               <ChartTooltip
                 cursor={false}
