@@ -1,64 +1,76 @@
-from rest_framework import generics
+# --- IMPORTS ---
+from rest_framework import generics, viewsets
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .models import User
-from .serializers import RegisterSerializer, UserSerializer
-
-from rest_framework import viewsets
 from django.db.models import Sum
 from datetime import datetime
-from .models import Category, Transaction
-from .serializers import CategorySerializer, TransactionSerializer
-from .models import Budget, InvestmentAsset, InvestmentTransaction, MonthlyReport
+
+# Import Models
+from .models import (
+    User, Category, Transaction, Budget, 
+    InvestmentAsset, InvestmentTransaction, MonthlyReport
+)
+
+# Import Serializers
 from .serializers import (
-    BudgetSerializer, InvestmentAssetSerializer, 
+    RegisterSerializer, UserSerializer, CategorySerializer, 
+    TransactionSerializer, BudgetSerializer, InvestmentAssetSerializer, 
     InvestmentTransactionSerializer, MonthlyReportSerializer
 )
 
-# 1. Sign Up API
+# --- 1. Auth APIs ---
 class RegisterView(generics.CreateAPIView):
     queryset = User.objects.all()
-    permission_classes = (AllowAny,) # Anyone can access this endpoint
+    permission_classes = (AllowAny,) 
     serializer_class = RegisterSerializer
 
-# 2. Get Current User API (Requires Login)
 class UserProfileView(APIView):
-    permission_classes = (IsAuthenticated,) # Only users with a valid JWT can access this
+    permission_classes = (IsAuthenticated,) 
 
     def get(self, request):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
-# --- 1. Category CRUD API ---
+
+# --- 2. Category CRUD API ---
 class CategoryViewSet(viewsets.ModelViewSet):
     serializer_class = CategorySerializer
     permission_classes = [IsAuthenticated]
 
-    # Security: Users can ONLY see their own categories
     def get_queryset(self):
         return Category.objects.filter(user=self.request.user)
 
-    # Security: When creating a category, automatically assign the logged-in user
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
 
-# --- 2. Transaction CRUD API ---
+# --- 3. Transaction CRUD API ---
 class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
     permission_classes = [IsAuthenticated]
 
-    # Security: Users can ONLY see their own transactions
     def get_queryset(self):
-        # We can also add a feature here to filter by month via the URL query params later
         return Transaction.objects.filter(user=self.request.user).order_by('-date')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # --- HACKATHON MAGIC: Auto-Create Categories ---
+        # Grab the strings sent from Next.js (defaults to Misc/EXPENSE if missing)
+        cat_name = self.request.data.get('category_name', 'Misc').capitalize()
+        cat_type = self.request.data.get('type', 'EXPENSE')
+        
+        # Automatically find the category, or create it if it doesn't exist!
+        category, created = Category.objects.get_or_create(
+            user=self.request.user,
+            name=cat_name,
+            defaults={'type': cat_type}
+        )
+        
+        # Save the transaction and link it to our newly found/created category
+        serializer.save(user=self.request.user, category=category)
 
 
-# --- 3. Dashboard Summary API ---
+# --- 4. Dashboard Summary API ---
 class DashboardSummaryView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -67,17 +79,13 @@ class DashboardSummaryView(APIView):
         current_month = datetime.now().month
         current_year = datetime.now().year
 
-        # Get all transactions for this user for the current month
         monthly_txns = Transaction.objects.filter(
             user=user, 
             date__month=current_month, 
             date__year=current_year
         )
 
-        # Sum the income
         income = monthly_txns.filter(category__type='INCOME').aggregate(total=Sum('amount'))['total'] or 0
-
-        # Sum the expenses
         expenses = monthly_txns.filter(category__type='EXPENSE').aggregate(total=Sum('amount'))['total'] or 0
 
         return Response({
@@ -88,7 +96,8 @@ class DashboardSummaryView(APIView):
             "net_balance": float(income - expenses)
         })
 
-# --- 4. Budget API ---
+
+# --- 5. Budget API ---
 class BudgetViewSet(viewsets.ModelViewSet):
     serializer_class = BudgetSerializer
     permission_classes = [IsAuthenticated]
@@ -97,9 +106,17 @@ class BudgetViewSet(viewsets.ModelViewSet):
         return Budget.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+        # Auto-find or create the category based on the frontend input
+        cat_name = self.request.data.get('category_name', 'Misc').capitalize()
+        category, created = Category.objects.get_or_create(
+            user=self.request.user,
+            name=cat_name,
+            defaults={'type': 'EXPENSE'}
+        )
+        serializer.save(user=self.request.user, category=category)
 
-# --- 5. Investment Asset API ---
+
+# --- 6. Investment Asset API ---
 class InvestmentAssetViewSet(viewsets.ModelViewSet):
     serializer_class = InvestmentAssetSerializer
     permission_classes = [IsAuthenticated]
@@ -110,7 +127,8 @@ class InvestmentAssetViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-# --- 6. Investment Transaction API ---
+
+# --- 7. Investment Transaction API ---
 class InvestmentTransactionViewSet(viewsets.ModelViewSet):
     serializer_class = InvestmentTransactionSerializer
     permission_classes = [IsAuthenticated]
@@ -119,7 +137,6 @@ class InvestmentTransactionViewSet(viewsets.ModelViewSet):
         return InvestmentTransaction.objects.filter(asset__user=self.request.user)
 
     def perform_create(self, serializer):
-        # Logic to update the Asset totals when a transaction occurs
         transaction = serializer.save()
         asset = transaction.asset
         if transaction.transaction_type == 'BUY':
@@ -128,7 +145,8 @@ class InvestmentTransactionViewSet(viewsets.ModelViewSet):
             asset.total_shares -= transaction.shares
         asset.save()
 
-# --- 7. Monthly Reports API (Read Only) ---
+
+# --- 8. Monthly Reports API (Read Only) ---
 class MonthlyReportViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = MonthlyReportSerializer
     permission_classes = [IsAuthenticated]
