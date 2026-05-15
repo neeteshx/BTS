@@ -16,7 +16,7 @@ from .models import (
 from .serializers import (
     RegisterSerializer, UserSerializer, CategorySerializer, 
     TransactionSerializer, BudgetSerializer, InvestmentAssetSerializer, 
-    InvestmentTransactionSerializer, MonthlyReportSerializer
+    InvestmentTransactionSerializer, MonthlyReportSerializer, GoalSerializer
 )
 
 # --- 1. Auth APIs ---
