@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.db.models import Sum
 from datetime import datetime
+from .emails import send_transaction_alert
 
 # Import Models
 from .models import (
