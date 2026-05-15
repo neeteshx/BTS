@@ -153,3 +153,45 @@ class MonthlyReportViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         return MonthlyReport.objects.filter(user=self.request.user).order_by('-year', '-month')
+
+class GenerateReportView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        current_month = datetime.now().month
+        current_year = datetime.now().year
+
+        # 1. Grab all transactions for this month
+        monthly_txns = Transaction.objects.filter(
+            user=user,
+            date__month=current_month,
+            date__year=current_year
+        )
+
+        # 2. Calculate totals
+        income = monthly_txns.filter(category__type='INCOME').aggregate(total=Sum('amount'))['total'] or 0
+        expenses = monthly_txns.filter(category__type='EXPENSE').aggregate(total=Sum('amount'))['total'] or 0
+
+        # 3. Find the top expense category
+        top_category_data = monthly_txns.filter(category__type='EXPENSE') \
+            .values('category__name') \
+            .annotate(cat_total=Sum('amount')) \
+            .order_by('-cat_total') \
+            .first()
+
+        top_cat_name = top_category_data['category__name'] if top_category_data else "None"
+
+        # 4. Update or Create the report for this month
+        report, created = MonthlyReport.objects.update_or_create(
+            user=user,
+            month=current_month,
+            year=current_year,
+            defaults={
+                'total_income': income,
+                'total_expenses': expenses,
+                'top_expense_category': top_cat_name
+            }
+        )
+
+        return Response({"message": "Report generated successfully!"})

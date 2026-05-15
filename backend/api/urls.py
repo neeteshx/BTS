@@ -7,11 +7,12 @@ from .views import (
     UserProfileView, 
     CategoryViewSet, 
     TransactionViewSet, 
-    DashboardSummaryView,  # <-- The comma was missing here!
+    DashboardSummaryView,
     BudgetViewSet, 
     InvestmentAssetViewSet, 
     InvestmentTransactionViewSet, 
-    MonthlyReportViewSet
+    MonthlyReportViewSet,
+    GenerateReportView
 )
 
 # 1. Initialize the Router
@@ -36,6 +37,7 @@ urlpatterns = [
 
     # Custom API Endpoints
     path('dashboard/', DashboardSummaryView.as_view(), name='dashboard'),
+    path('reports/generate/', GenerateReportView.as_view(), name='generate-report'),
 
     # Router Endpoints
     path('', include(router.urls)), 
