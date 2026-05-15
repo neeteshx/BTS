@@ -71,6 +71,12 @@ export const schema = z.object({
 
 type Transaction = z.infer<typeof schema>
 
+interface Category {
+    id: number
+    name: string
+    type: string
+  }
+
 // Define columns outside, but use table.options.meta to access functions inside DataTable
 const columns: ColumnDef<Transaction>[] = [
   {
@@ -216,6 +222,7 @@ export function DataTable() {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [rowSelection, setRowSelection] = React.useState({})
   const [pagination, setPagination] = React.useState({ pageIndex: 0, pageSize: 10 })
+  const [categories, setCategories] = React.useState<Category[]>([])
 
   // Add Dialog State
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false)
@@ -249,6 +256,27 @@ export function DataTable() {
 
   React.useEffect(() => {
     fetchTransactions()
+
+    // Fetch categories dynamically
+    const fetchCategories = async () => {
+      const token = localStorage.getItem("access")
+      if (!token) return
+      try {
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_API_URL}/api/categories/`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        )
+        if (res.ok) {
+          const data = await res.json()
+          setCategories(data)
+        }
+      } catch (error) {
+        console.error("Failed to load categories")
+      }
+    }
+    fetchCategories()
   }, [])
 
   // --- CREATE ---
@@ -378,18 +406,31 @@ export function DataTable() {
             <form onSubmit={handleAddTransaction}>
               <DialogHeader>
                 <DialogTitle>Add Transaction</DialogTitle>
-                <DialogDescription>Enter the details of your new transaction.</DialogDescription>
+                <DialogDescription>
+                  Enter the details of your new transaction.
+                </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="flex flex-col gap-3">
                   <Label htmlFor="description">Description</Label>
-                  <Input id="description" name="description" placeholder="e.g. Coffee" required />
+                  <Input
+                    id="description"
+                    name="description"
+                    placeholder="e.g. Coffee"
+                    required
+                  />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-3">
                     <Label htmlFor="type">Type</Label>
-                    <Select value={newTxnType} onValueChange={setNewTxnType} name="type">
-                      <SelectTrigger id="type"><SelectValue placeholder="Select type" /></SelectTrigger>
+                    <Select
+                      value={newTxnType}
+                      onValueChange={setNewTxnType}
+                      name="type"
+                    >
+                      <SelectTrigger id="type">
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="EXPENSE">Expense</SelectItem>
                         <SelectItem value="INCOME">Income</SelectItem>
@@ -398,22 +439,23 @@ export function DataTable() {
                   </div>
                   <div className="flex flex-col gap-3">
                     <Label htmlFor="category">Category</Label>
-                    <Select name="category" defaultValue="misc">
-                      <SelectTrigger id="category"><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <Select name="category">
+                      <SelectTrigger id="category">
+                        <SelectValue placeholder="Select category" />
+                      </SelectTrigger>
                       <SelectContent>
-                        {newTxnType === "INCOME" ? (
-                          <>
-                            <SelectItem value="salary">Salary</SelectItem>
-                            <SelectItem value="bonus">Bonus</SelectItem>
-                            <SelectItem value="gift">Gift</SelectItem>
-                          </>
+                        {categories.length > 0 ? (
+                          categories
+                            .filter((cat) => cat.type === newTxnType) // Only show categories matching INCOME or EXPENSE
+                            .map((cat) => (
+                              <SelectItem key={cat.id} value={cat.name}>
+                                {cat.name}
+                              </SelectItem>
+                            ))
                         ) : (
-                          <>
-                            <SelectItem value="groceries">Groceries</SelectItem>
-                            <SelectItem value="bills">Bills</SelectItem>
-                            <SelectItem value="entertainment">Entertainment</SelectItem>
-                            <SelectItem value="misc">Misc</SelectItem>
-                          </>
+                          <div className="p-2 text-sm text-muted-foreground">
+                            Go to Budgets to create categories!
+                          </div>
                         )}
                       </SelectContent>
                     </Select>
@@ -422,7 +464,14 @@ export function DataTable() {
                 <div className="grid grid-cols-2 gap-4">
                   <div className="flex flex-col gap-3">
                     <Label htmlFor="amount">Amount (₹)</Label>
-                    <Input id="amount" name="amount" type="number" step="0.01" placeholder="0.00" required />
+                    <Input
+                      id="amount"
+                      name="amount"
+                      type="number"
+                      step="0.01"
+                      placeholder="0.00"
+                      required
+                    />
                   </div>
                   <div className="flex flex-col gap-3">
                     <Label htmlFor="date">Date</Label>
@@ -431,8 +480,16 @@ export function DataTable() {
                 </div>
               </div>
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
-                <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Saving..." : "Save Transaction"}</Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setIsAddDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? "Saving..." : "Save Transaction"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -445,18 +502,31 @@ export function DataTable() {
               <form onSubmit={handleEditTransaction}>
                 <DialogHeader>
                   <DialogTitle>Edit Transaction</DialogTitle>
-                  <DialogDescription>Make changes to your transaction.</DialogDescription>
+                  <DialogDescription>
+                    Make changes to your transaction.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="grid gap-4 py-4">
                   <div className="flex flex-col gap-3">
                     <Label htmlFor="edit-description">Description</Label>
-                    <Input id="edit-description" name="description" defaultValue={editingTxn.description} required />
+                    <Input
+                      id="edit-description"
+                      name="description"
+                      defaultValue={editingTxn.description}
+                      required
+                    />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-3">
                       <Label htmlFor="edit-type">Type</Label>
-                      <Select value={editTxnType} onValueChange={setEditTxnType} name="type">
-                        <SelectTrigger id="edit-type"><SelectValue placeholder="Select type" /></SelectTrigger>
+                      <Select
+                        value={editTxnType}
+                        onValueChange={setEditTxnType}
+                        name="type"
+                      >
+                        <SelectTrigger id="edit-type">
+                          <SelectValue placeholder="Select type" />
+                        </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="EXPENSE">Expense</SelectItem>
                           <SelectItem value="INCOME">Income</SelectItem>
@@ -464,23 +534,24 @@ export function DataTable() {
                       </Select>
                     </div>
                     <div className="flex flex-col gap-3">
-                      <Label htmlFor="edit-category">Category</Label>
-                      <Select name="category" defaultValue={editingTxn.category_name?.toLowerCase() || "misc"}>
-                        <SelectTrigger id="edit-category"><SelectValue placeholder="Select category" /></SelectTrigger>
+                      <Label htmlFor="category">Category</Label>
+                      <Select name="category">
+                        <SelectTrigger id="category">
+                          <SelectValue placeholder="Select category" />
+                        </SelectTrigger>
                         <SelectContent>
-                          {editTxnType === "INCOME" ? (
-                            <>
-                              <SelectItem value="salary">Salary</SelectItem>
-                              <SelectItem value="bonus">Bonus</SelectItem>
-                              <SelectItem value="gift">Gift</SelectItem>
-                            </>
+                          {categories.length > 0 ? (
+                            categories
+                              .filter((cat) => cat.type === newTxnType) // Only show categories matching INCOME or EXPENSE
+                              .map((cat) => (
+                                <SelectItem key={cat.id} value={cat.name}>
+                                  {cat.name}
+                                </SelectItem>
+                              ))
                           ) : (
-                            <>
-                              <SelectItem value="groceries">Groceries</SelectItem>
-                              <SelectItem value="bills">Bills</SelectItem>
-                              <SelectItem value="entertainment">Entertainment</SelectItem>
-                              <SelectItem value="misc">Misc</SelectItem>
-                            </>
+                            <div className="p-2 text-sm text-muted-foreground">
+                              Go to Budgets to create categories!
+                            </div>
                           )}
                         </SelectContent>
                       </Select>
@@ -489,17 +560,38 @@ export function DataTable() {
                   <div className="grid grid-cols-2 gap-4">
                     <div className="flex flex-col gap-3">
                       <Label htmlFor="edit-amount">Amount (₹)</Label>
-                      <Input id="edit-amount" name="amount" type="number" step="0.01" defaultValue={editingTxn.amount} required />
+                      <Input
+                        id="edit-amount"
+                        name="amount"
+                        type="number"
+                        step="0.01"
+                        defaultValue={editingTxn.amount}
+                        required
+                      />
                     </div>
                     <div className="flex flex-col gap-3">
                       <Label htmlFor="edit-date">Date</Label>
-                      <Input id="edit-date" name="date" type="date" defaultValue={editingTxn.date} required />
+                      <Input
+                        id="edit-date"
+                        name="date"
+                        type="date"
+                        defaultValue={editingTxn.date}
+                        required
+                      />
                     </div>
                   </div>
                 </div>
                 <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>Cancel</Button>
-                  <Button type="submit" disabled={isSubmitting}>{isSubmitting ? "Updating..." : "Update Transaction"}</Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsEditDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={isSubmitting}>
+                    {isSubmitting ? "Updating..." : "Update Transaction"}
+                  </Button>
                 </DialogFooter>
               </form>
             )}
@@ -514,7 +606,12 @@ export function DataTable() {
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <TableHead key={header.id}>
-                    {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                    {header.isPlaceholder
+                      ? null
+                      : flexRender(
+                          header.column.columnDef.header,
+                          header.getContext()
+                        )}
                   </TableHead>
                 ))}
               </TableRow>
@@ -523,17 +620,26 @@ export function DataTable() {
           <TableBody>
             {table.getRowModel().rows?.length ? (
               table.getRowModel().rows.map((row) => (
-                <TableRow key={row.id} data-state={row.getIsSelected() && "selected"}>
+                <TableRow
+                  key={row.id}
+                  data-state={row.getIsSelected() && "selected"}
+                >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext()
+                      )}
                     </TableCell>
                   ))}
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={columns.length} className="h-24 text-center">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center"
+                >
                   No transactions found.
                 </TableCell>
               </TableRow>
@@ -545,26 +651,48 @@ export function DataTable() {
       {/* Pagination Container */}
       <div className="flex items-center justify-between px-2">
         <div className="text-sm text-muted-foreground">
-          {table.getFilteredSelectedRowModel().rows.length} of {table.getFilteredRowModel().rows.length} row(s) selected.
+          {table.getFilteredSelectedRowModel().rows.length} of{" "}
+          {table.getFilteredRowModel().rows.length} row(s) selected.
         </div>
         <div className="flex items-center gap-6 lg:gap-8">
           <div className="flex w-[100px] items-center justify-center text-sm font-medium">
-            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+            Page {table.getState().pagination.pageIndex + 1} of{" "}
+            {table.getPageCount()}
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" className="h-8 w-8 p-0" onClick={() => table.setPageIndex(0)} disabled={!table.getCanPreviousPage()}>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => table.setPageIndex(0)}
+              disabled={!table.getCanPreviousPage()}
+            >
               <span className="sr-only">Go to first page</span>
               <ChevronsLeftIcon className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="h-8 w-8 p-0" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+            >
               <span className="sr-only">Go to previous page</span>
               <ChevronLeftIcon className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="h-8 w-8 p-0" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+            >
               <span className="sr-only">Go to next page</span>
               <ChevronRightIcon className="h-4 w-4" />
             </Button>
-            <Button variant="outline" className="h-8 w-8 p-0" onClick={() => table.setPageIndex(table.getPageCount() - 1)} disabled={!table.getCanNextPage()}>
+            <Button
+              variant="outline"
+              className="h-8 w-8 p-0"
+              onClick={() => table.setPageIndex(table.getPageCount() - 1)}
+              disabled={!table.getCanNextPage()}
+            >
               <span className="sr-only">Go to last page</span>
               <ChevronsRightIcon className="h-4 w-4" />
             </Button>

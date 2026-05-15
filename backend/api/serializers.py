@@ -38,6 +38,7 @@ class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Transaction
         fields = ['id', 'category', 'category_name', 'type', 'amount', 'date', 'description', 'created_at']
+        read_only_fields = ['category']
 
 class BudgetSerializer(serializers.ModelSerializer):
     category_name = serializers.CharField(source='category.name', read_only=True)
@@ -45,6 +46,7 @@ class BudgetSerializer(serializers.ModelSerializer):
     class Meta:
         model = Budget
         fields = ['id', 'category', 'category_name', 'monthly_limit']
+        read_only_fields = ['category']
 
 class InvestmentTransactionSerializer(serializers.ModelSerializer):
     class Meta:
