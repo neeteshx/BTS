@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from datetime import timedelta
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -160,3 +161,5 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=7),    # Next.js uses this to get a new access token quietly
     'AUTH_HEADER_TYPES': ('Bearer',),
 }
+
+RESEND_API_KEY = os.getenv('RESEND_API_KEY')

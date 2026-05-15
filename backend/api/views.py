@@ -9,7 +9,8 @@ from datetime import datetime
 # Import Models
 from .models import (
     User, Category, Transaction, Budget, 
-    InvestmentAsset, InvestmentTransaction, MonthlyReport
+    InvestmentAsset, InvestmentTransaction, MonthlyReport,
+    Goal
 )
 
 # Import Serializers
